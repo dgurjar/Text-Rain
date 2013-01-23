@@ -10,10 +10,12 @@
 //4. Make rain properly collide with body
 //5. Add lightning
 //6. Add wind
-//
+//7. Is there a better way to generate random ints in processing?
 
 import processing.video.*;
 Capture video;
+
+///////////////////////////////////////////////////////////////////////////////
 
 //The threshold we are using to bound the person
 int threshold = 127;
@@ -21,6 +23,17 @@ int numPixels;
 
 //The number of droplets that are available at any given time
 Droplet[] rain = new Droplet[20];
+
+//Base droplet properties, position and its derivatives
+int base_x, base_y;
+int base_x_v = 0;
+int base_y_v = (int)random(10);
+int base_x_a = 0;
+int base_y_a = (int)random(3) + 5;
+int base_size = 16;
+
+
+///////////////////////////////////////////////////////////////////////////////
 
 void setup(){
     size(640, 480, P2D);
@@ -30,18 +43,14 @@ void setup(){
     video.start();
     numPixels = video.width * video.height;
 
+    //Set globals dependant on video size
+    base_x = (int)random(video.width);
+    base_y = (int)random(video.height)/2;
+
     //Create the droplets
     for(int i = 0; i<rain.length; i++){
-        int x = (int)random(video.width);
-        int y = -(int)random(video.width)/2;
-        int x_v = 0;
-        int y_v = (int)random(10);
-        int x_a = 0;
-        int y_a = (int)random(3) + 9;
-        int size = 16;
-        rain[i] = new Droplet('d', x, y, x_v, y_v, x_a, y_a, size);
-
-    smooth();
+        rain[i] = new Droplet('d', base_x, base_y, base_x_v, base_y_v, base_x_a, base_y_a, base_size);
+        smooth();
     }
 }
 
@@ -55,8 +64,8 @@ void draw(){
         }
         updatePixels();
         updateRain();
-    }
-}
+        }
+        }
 
 /* This function draws and controls the rain effect */
 void updateRain(){
