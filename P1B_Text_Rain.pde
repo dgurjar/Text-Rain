@@ -21,15 +21,26 @@ Capture video;
 int threshold = 127;
 int numPixels;
 
+//The max number of letters allowed in the text
+int maxLetters = 20;
+
+//The max number of droplets a bucket can emit
+//Catch too much water, it will stop raining!
+int maxDropletsPerBucket = 20;
+
+//TODO: Right now this is static, would be cool if it could be changed dynamically
+//The text we are displaying
+String text = "Hello World!";
+
 //The number of droplets that are available at any given time
-Droplet[] rain = new Droplet[20];
+Droplet[][] rain = new Droplet[maxLetters][maxDropletsPerBucket];
 
 //Base droplet properties, position and its derivatives
 int base_x, base_y;
 int base_x_v = 0;
-int base_y_v = (int)random(10);
+int base_y_v = (int)random(2);
 int base_x_a = 0;
-int base_y_a = (int)random(3) + 5;
+int base_y_a = (int)random(2) + 1;
 int base_size = 16;
 
 
@@ -47,11 +58,25 @@ void setup(){
     base_x = (int)random(video.width);
     base_y = (int)random(video.height)/2;
 
+    //The number of pixels allocated for each droplet's starting point
+    int bucketInterval = video.width/maxLetters;
+
+    //The number of the leftmost interval where rain starts to fall
+    //This is used to center the rain
+    //TODO: Think about this when awake, make sure no edge cases
+    int leftmostBucket = (text.length() >= maxLetters) ? 0 : (maxLetters/2) - (text.length()/2);
+
     //Create the droplets
-    for(int i = 0; i<rain.length; i++){
-        rain[i] = new Droplet('d', base_x, base_y, base_x_v, base_y_v, base_x_a, base_y_a, base_size);
-        smooth();
+    for(int i = 0; i<text.length(); i++){
+        int x = (leftmostBucket+i) * bucketInterval;
+        for(int j = 0; j<maxDropletsPerBucket; j++){
+            int y = -j*20;
+            rain[i][j] = new Droplet(text.charAt(i), x, y, base_x_v, base_y_v, base_x_a, base_y_a, base_size);
+        }
     }
+
+
+    smooth();
 }
 
 void draw(){
@@ -64,15 +89,19 @@ void draw(){
         }
         updatePixels();
         updateRain();
-        }
-        }
+    }
+}
 
 /* This function draws and controls the rain effect */
 void updateRain(){
     for(int i=0; i<rain.length; i++){
-        //TODO: Ensure that we don't fall if the droplet is blocked
-        rain[i].fall();
-        rain[i].display();
+        for(int j=0; j<rain[i].length; j++){
+            //TODO: Ensure that we don't fall if the droplet is blocked
+            if(rain[i][j] != null){
+                rain[i][j].fall();
+                rain[i][j].display();
+            }
+        }
     }
 }
 
@@ -102,19 +131,17 @@ class Droplet{
 
         }
         else{
-          x += x_v;
-          x_v += x_a;
+            x += x_v;
+            x_v += x_a;
         }
-        //Mabye add a random element here
+        //TODO: Maybe add a random element here
         if(y>video.height){
-          y = 0;
-          y_v = 0;
-          x = (int)random(video.width);
-          y = -(int)random(video.width)/2;
+            y = 0;
+            y_v = 0;
         }
         else{
-          y += y_v;
-          y_v += y_a;
+            y += y_v;
+            y_v += y_a;
         }
     }
 
