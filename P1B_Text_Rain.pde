@@ -4,13 +4,11 @@
 
 
 //TODO:
-//1. Let users select a line of text
-//2. Droplets will fall based on what the line is
-//3. Make rain realistic
-//4. Make rain properly collide with body
-//5. Add lightning
-//6. Add wind
-//7. Is there a better way to generate random ints in processing?
+//- Make rain properly collide with body
+//- Make rain realistic
+//- Add lightning
+//- Add wind
+//- Is there a better way to generate random ints in processing?
 
 import processing.video.*;
 Capture video;
@@ -41,7 +39,7 @@ int base_x_v = 0;
 int base_y_v = (int)random(2);
 int base_x_a = 0;
 int base_y_a = (int)random(2) + 1;
-int base_size = 16;
+int base_size = 20;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,11 +68,10 @@ void setup(){
     for(int i = 0; i<text.length(); i++){
         int x = (leftmostBucket+i) * bucketInterval;
         for(int j = 0; j<maxDropletsPerBucket; j++){
-            int y = -j*20;
+            int y = -j*30;
             rain[i][j] = new Droplet(text.charAt(i), x, y, base_x_v, base_y_v, base_x_a, base_y_a, base_size);
         }
     }
-
 
     smooth();
 }
@@ -92,13 +89,26 @@ void draw(){
     }
 }
 
+
+void keyPressed(){
+    if(key == CODED){
+        if(keyCode == UP){
+            threshold = min(255, threshold+1);
+        }
+        else if(keyCode == DOWN){
+            threshold = max(0, threshold-1);
+        }
+    }
+
+}
+
 /* This function draws and controls the rain effect */
 void updateRain(){
     for(int i=0; i<rain.length; i++){
         for(int j=0; j<rain[i].length; j++){
             //TODO: Ensure that we don't fall if the droplet is blocked
             if(rain[i][j] != null){
-                rain[i][j].fall();
+                rain[i][j].fall(video);
                 rain[i][j].display();
             }
         }
@@ -109,12 +119,25 @@ void updateRain(){
 class Droplet{
     //The character we are drawing
     char c;
-    //The size the droplet is being drawn
+    //The font size the droplet is being drawn
     int size;
     //The current position, velocity, and acceleration of the drop
     int x, y, x_v, y_v, x_a, y_a;
+    //The starting position, velocity, and acceleration of the drop
+    int init_x, init_y, init_x_v, init_y_v, init_x_a, init_y_a;
+    //The width and height of the
+    int width, height;
+
+    //TODO: IF this works well document it
+    float collisionThresh = 0.5;
 
     Droplet(char c, int x, int y, int x_v, int y_v, int x_a, int y_a, int size){
+        this.init_x = x;
+        this.init_y = y;
+        this.init_x_v = x_v;
+        this.init_y_v = y_v;
+        this.init_x_a = x_a;
+        this.init_y_a = y_a;
         this.c = c;
         this.x = x;
         this.y = y;
@@ -123,23 +146,35 @@ class Droplet{
         this.x_a = x_a;
         this.y_a = y_a;
         this.size = size;
+        textSize(size);
+        this.width = (int)textWidth(c);
+        this.height = size;
     }
 
     /* Causes the droplet to fall */
-    void fall(){
-        if(x > video.width){
+    void fall(Capture video){
 
+        //If droplets go offscreen, bring them back to the top
+        if(x > video.width || x < 0 || y > video.height || y < 0){
+            y = 0;
+            y_v = 0;
+            x = init_x;
+            x_v = init_x_v;
         }
+
+        //If the droplet collides, we want to move it up
+        else if(isCollision()){
+            while(isCollision()){
+                y -= size/4;
+                y_v = 0;
+                return;
+            }
+        }
+
+        //Droplet falls normally
         else{
             x += x_v;
             x_v += x_a;
-        }
-        //TODO: Maybe add a random element here
-        if(y>video.height){
-            y = 0;
-            y_v = 0;
-        }
-        else{
             y += y_v;
             y_v += y_a;
         }
@@ -148,7 +183,17 @@ class Droplet{
     /* Displays the droplet */
     void display(){
         textSize(size);
-        textAlign(CENTER);
+        fill(0, 102, 153, 90);
         text(c, x, y);
+    }
+
+
+    /* Simple collision detection using brightness thresholding */
+    boolean isCollision(){
+        println(video.width);
+        if(brightness(video.pixels[video.width*y+x]) <= threshold)
+            return true;
+
+        return false;
     }
 }
