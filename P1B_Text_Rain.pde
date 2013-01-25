@@ -39,7 +39,7 @@ int base_x, base_y;
 int base_x_v = 0;
 int base_y_v = (int)random(2);
 int base_x_a = 0;
-int base_y_a = (int)random(1)+1;
+int base_y_a = 1;
 int base_size = 20;
 
 
