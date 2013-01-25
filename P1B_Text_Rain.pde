@@ -24,11 +24,12 @@ int maxLetters = 20;
 
 //The max number of droplets a bucket can emit
 //Catch too much water, it will stop raining!
-int maxDropletsPerBucket = 20;
+//Conserrves memory!
+int maxDropletsPerBucket = 50;
 
 //TODO: Right now this is static, would be cool if it could be changed dynamically
 //The text we are displaying
-String text = "Hello World!";
+String text = "Interactive Art and Computational Design";
 
 //The number of droplets that are available at any given time
 Droplet[][] rain = new Droplet[maxLetters][maxDropletsPerBucket];
@@ -38,7 +39,7 @@ int base_x, base_y;
 int base_x_v = 0;
 int base_y_v = (int)random(2);
 int base_x_a = 0;
-int base_y_a = (int)random(2) + 1;
+int base_y_a = (int)random(1)+1;
 int base_size = 20;
 
 
@@ -61,14 +62,16 @@ void setup(){
 
     //The number of the leftmost interval where rain starts to fall
     //This is used to center the rain
-    //TODO: Think about this when awake, make sure no edge cases
     int leftmostBucket = (text.length() >= maxLetters) ? 0 : (maxLetters/2) - (text.length()/2);
 
+    //
+    int displayedLetters = min(maxLetters, text.length());
+
     //Create the droplets
-    for(int i = 0; i<text.length(); i++){
+    for(int i = 0; i<displayedLetters; i++){
         int x = (leftmostBucket+i) * bucketInterval;
         for(int j = 0; j<maxDropletsPerBucket; j++){
-            int y = -j*30;
+            int y = -j*100;
             rain[i][j] = new Droplet(text.charAt(i), x, y, base_x_v, base_y_v, base_x_a, base_y_a, base_size);
         }
     }
@@ -106,7 +109,6 @@ void keyPressed(){
 void updateRain(){
     for(int i=0; i<rain.length; i++){
         for(int j=0; j<rain[i].length; j++){
-            //TODO: Ensure that we don't fall if the droplet is blocked
             if(rain[i][j] != null){
                 rain[i][j].fall(video);
                 rain[i][j].display();
@@ -127,9 +129,6 @@ class Droplet{
     int init_x, init_y, init_x_v, init_y_v, init_x_a, init_y_a;
     //The width and height of the
     int width, height;
-
-    //TODO: IF this works well document it
-    float collisionThresh = 0.5;
 
     Droplet(char c, int x, int y, int x_v, int y_v, int x_a, int y_a, int size){
         this.init_x = x;
@@ -155,8 +154,8 @@ class Droplet{
     void fall(Capture video){
 
         //If droplets go offscreen, bring them back to the top
-        if(x > video.width || x < 0 || y > video.height || y < 0){
-            y = 0;
+        if(x > video.width || x < 0 || y > video.height){
+            y = init_y;
             y_v = 0;
             x = init_x;
             x_v = init_x_v;
@@ -165,10 +164,10 @@ class Droplet{
         //If the droplet collides, we want to move it up
         else if(isCollision()){
             while(isCollision()){
-                y -= size/4;
+                y -= 1;
                 y_v = 0;
-                return;
             }
+            return;
         }
 
         //Droplet falls normally
@@ -187,13 +186,11 @@ class Droplet{
         text(c, x, y);
     }
 
-
     /* Simple collision detection using brightness thresholding */
     boolean isCollision(){
-        println(video.width);
-        if(brightness(video.pixels[video.width*y+x]) <= threshold)
+        int index = video.width*y+x;
+        if(index>0 && index<video.pixels.length && brightness(video.pixels[index]) <= threshold)
             return true;
-
         return false;
     }
 }
