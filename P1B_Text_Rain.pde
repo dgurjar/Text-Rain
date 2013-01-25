@@ -39,9 +39,8 @@ int base_x, base_y;
 int base_x_v = 0;
 int base_y_v = (int)random(2);
 int base_x_a = 0;
-int base_y_a = 1;
+int base_y_a = (int)random(1)+1;
 int base_size = 20;
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -93,13 +92,46 @@ void draw(){
 }
 
 
+//TODO: Clean some of this up, combining it with calls to updateRain()
 void keyPressed(){
     if(key == CODED){
+        //Increase brightness threshold
         if(keyCode == UP){
             threshold = min(255, threshold+1);
         }
+        //Decrease brightness threshold
         else if(keyCode == DOWN){
             threshold = max(0, threshold-1);
+        }
+        //Increase wind blowing to the left
+        else if(keyCode == LEFT){
+            for(int i=0; i<rain.length; i++){
+                for(int j=0; j<rain[i].length; j++){
+                    if(rain[i][j] != null){
+                        rain[i][j].increaseWindToLeft();
+                    }
+                }
+            }
+        }
+        //Increse wind blowing to the right
+        else if(keyCode == RIGHT){
+            for(int i=0; i<rain.length; i++){
+                for(int j=0; j<rain[i].length; j++){
+                    if(rain[i][j] != null){
+                        rain[i][j].increaseWindToRight();
+                    }
+                }
+            }
+        }
+        //Toggles snow
+        else if(keyCode == SHIFT){
+            for(int i=0; i<rain.length; i++){
+                for(int j=0; j<rain[i].length; j++){
+                    if(rain[i][j] != null){
+                        rain[i][j].toggleSnow();
+                    }
+                }
+            }       
         }
     }
 
@@ -124,11 +156,16 @@ class Droplet{
     //The font size the droplet is being drawn
     int size;
     //The current position, velocity, and acceleration of the drop
-    int x, y, x_v, y_v, x_a, y_a;
+    float x, y, x_v, y_v, x_a, y_a;
     //The starting position, velocity, and acceleration of the drop
     int init_x, init_y, init_x_v, init_y_v, init_x_a, init_y_a;
     //The width and height of the
     int width, height;
+    //Terminal velocity for the droplet
+    //Change this value if you want it to snow instead
+    int terminal_v = 12;
+    //Whether this droplet is now snow
+    boolean isSnow;
 
     Droplet(char c, int x, int y, int x_v, int y_v, int x_a, int y_a, int size){
         this.init_x = x;
@@ -173,9 +210,11 @@ class Droplet{
         //Droplet falls normally
         else{
             x += x_v;
-            x_v += x_a;
+            x_v = min((x_a + x_v), terminal_v);
             y += y_v;
-            y_v += y_a;
+            y_v = min((y_a + y_v), terminal_v);
+
+            //TODO: Add some entropy in x-axis and lower terminal velocity for snow
         }
     }
 
@@ -188,9 +227,23 @@ class Droplet{
 
     /* Simple collision detection using brightness thresholding */
     boolean isCollision(){
-        int index = video.width*y+x;
+        int index = video.width*(int)y+(int)x;
         if(index>0 && index<video.pixels.length && brightness(video.pixels[index]) <= threshold)
             return true;
         return false;
     }
+
+    //TODO: Remove magic from magic numbers
+    void increaseWindToRight(){
+        x_a = x_a + .01;
+    }
+
+    void increaseWindToLeft(){
+        x_a = x_a - .01;
+    }
+
+    void toggleSnow(){
+        isSnow = !isSnow;
+        terminal_v = isSnow ? 5 : 12;
+    }    
 }
